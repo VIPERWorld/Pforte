@@ -17,30 +17,6 @@
 Для управления диодами и реле нужна еще микросхема драйвера типа ULN2003 или ULN2803.
 Вместо драйвера можно применить транзисторы типа NPN.
 
-*/
-/*
- * Test send/receive functions of IRremote, using a pair of Arduinos.
- *
- * Arduino #1 should have an IR LED connected to the send pin (3).
- * Arduino #2 should have an IR detector/demodulator connected to the
- * receive pin (11) and a visible LED connected to pin 3.
- *
- * The cycle:
- *  Arduino #1 will wait 2 seconds, then run through the tests.
- *  It repeats this forever.
- *  Arduino #2 will wait for at least one second of no signal
- *  (to synchronize with #1).  It will then wait for the same test
- *  signals.  It will log all the status to the serial port.  It will
- *  also indicate status through the LED, which will flash each time a test
- *  is completed.  If there is an error, it will light up for 5 seconds.
- *
- * The test passes if the LED flashes 19 times, pauses, and then repeats.
- * The test fails if the LED lights for 5 seconds.
- *
- * The test software automatically decides which board is the sender and which is
- * the receiver by looking for an input on the send pin, which will indicate
- * the sender.  You should hook the serial port to the receiver for debugging.
-
  Тест передачи / приема функции IRremote, используя пару Arduinos.
  *
  * Ардуино # 1 должен иметь светодиодный ИК, подключенный к посыла штифтом (3).
@@ -63,10 +39,6 @@
  * Приемник, ища вход на передающем штифтом, который будет указывать
  * Отправитель. Вы должны подключить последовательный порт к приемнику для отладки.
 
-
- *  
- * Copyright 2010 Ken Shirriff
- * http://arcfn.com
  */
 
 #include <IRremote.h>
@@ -89,30 +61,35 @@ void setup()
 {
   Serial.begin(9600);
   // Check RECV_PIN to decide if we're RECEIVER or SENDER
-  if (digitalRead(RECV_PIN) == HIGH) {
+  if (digitalRead(RECV_PIN) == HIGH) 
+  {
     mode = RECEIVER;
     irrecv.enableIRIn();
     pinMode(LED_PIN, OUTPUT);
     digitalWrite(LED_PIN, LOW);
     Serial.println("Receiver mode");
   } 
-  else {
+  else 
+  {
     mode = SENDER;
     Serial.println("Sender mode");
   }
 }
 
-// Wait for the gap between tests, to synchronize with
-// the sender.
-// Specifically, wait for a signal followed by a gap of at last gap ms.
-void waitForGap(int gap) {
+// Подождите, пока разрыв между тестами, для синхронизации с
+// Отправитель.
+// В частности, ждать сигнала с последующим разрывом в последние щелевых мс.
+void waitForGap(int gap) 
+{
   Serial.println("Waiting for gap");
-  while (1) {
-    while (digitalRead(RECV_PIN) == LOW) { 
-    }
+  while (1) 
+  {
+    while (digitalRead(RECV_PIN) == LOW) {}
     unsigned long time = millis();
-    while (digitalRead(RECV_PIN) == HIGH) {
-      if (millis() - time > gap) {
+    while (digitalRead(RECV_PIN) == HIGH) 
+	{
+      if (millis() - time > gap) 
+	  {
         return;
       }
     }
@@ -121,22 +98,29 @@ void waitForGap(int gap) {
 
 // Dumps out the decode_results structure.
 // Call this after IRrecv::decode()
-void dump(decode_results *results) {
+void dump(decode_results *results) 
+{
   int count = results->rawlen;
-  if (results->decode_type == UNKNOWN) {
+  if (results->decode_type == UNKNOWN) 
+  {
     Serial.println("Could not decode message");
   } 
-  else {
-    if (results->decode_type == NEC) {
+  else 
+  {
+    if (results->decode_type == NEC) 
+	{
       Serial.print("Decoded NEC: ");
     } 
-    else if (results->decode_type == SONY) {
+    else if (results->decode_type == SONY) 
+	{
       Serial.print("Decoded SONY: ");
     } 
-    else if (results->decode_type == RC5) {
+    else if (results->decode_type == RC5) 
+	{
       Serial.print("Decoded RC5: ");
     } 
-    else if (results->decode_type == RC6) {
+    else if (results->decode_type == RC6) 
+	{
       Serial.print("Decoded RC6: ");
     }
     Serial.print(results->value, HEX);
@@ -161,55 +145,66 @@ void dump(decode_results *results) {
 }
 
 
-// Test send or receive.
-// If mode is SENDER, send a code of the specified type, value, and bits
-// If mode is RECEIVER, receive a code and verify that it is of the
-// specified type, value, and bits.  For success, the LED is flashed;
-// for failure, the mode is set to ERROR.
-// The motivation behind this method is that the sender and the receiver
-// can do the same test calls, and the mode variable indicates whether
-// to send or receive.
-void test(char *label, int type, unsigned long value, int bits) {
-  if (mode == SENDER) {
+// Проверка отправки или приема.
+// Если режим ОТПРАВИТЕЛЬ, отправьте код указанного типа, значение и биты
+// Если режим RECEIVER, получить код и убедитесь, что он имеет
+// указанного типа, значение и биты. Для успеха, светодиод мигает;
+// Для отказа, режим устанавливается на ERROR.
+// Мотивацией этого метода заключается в том, что отправитель и получатель
+// Может делать то же вызовы тестирования, а переменная режима указывает, является ли
+// Для отправки или получения.
+void test(char *label, int type, unsigned long value, int bits) 
+{
+  if (mode == SENDER) 
+  {
     Serial.println(label);
     if (type == NEC) {
       irsend.sendNEC(value, bits);
     } 
-    else if (type == SONY) {
+    else if (type == SONY) 
+	{
       irsend.sendSony(value, bits);
     } 
-    else if (type == RC5) {
+    else if (type == RC5) 
+	{
       irsend.sendRC5(value, bits);
     } 
-    else if (type == RC6) {
+    else if (type == RC6) 
+	{
       irsend.sendRC6(value, bits);
     } 
-    else {
+    else 
+	{
       Serial.print(label);
       Serial.println("Bad type!");
     }
     delay(200);
   } 
-  else if (mode == RECEIVER) {
+  else if (mode == RECEIVER) 
+  {
     irrecv.resume(); // Receive the next value
     unsigned long max_time = millis() + 30000;
     Serial.print(label);
 
     // Wait for decode or timeout
-    while (!irrecv.decode(&results)) {
-      if (millis() > max_time) {
+    while (!irrecv.decode(&results)) 
+	{
+      if (millis() > max_time) 
+	  {
         Serial.println("Timeout receiving data");
         mode = ERROR;
         return;
       }
     }
-    if (type == results.decode_type && value == results.value && bits == results.bits) {
+    if (type == results.decode_type && value == results.value && bits == results.bits) 
+	{
       Serial.println (": OK");
       digitalWrite(LED_PIN, HIGH);
       delay(20);
       digitalWrite(LED_PIN, LOW);
     } 
-    else {
+    else 
+	{
       Serial.println(": BAD");
       dump(&results);
       mode = ERROR;
@@ -217,22 +212,26 @@ void test(char *label, int type, unsigned long value, int bits) {
   }
 }
 
-// Test raw send or receive.  This is similar to the test method,
-// except it send/receives raw data.
-void testRaw(char *label, unsigned int *rawbuf, int rawlen) {
-  if (mode == SENDER) {
+// Проверка сырой отправить или получить. Это аналогично методу испытаний,
+// За исключением того, отправка / получает исходные данные.
+void testRaw(char *label, unsigned int *rawbuf, int rawlen) 
+{
+  if (mode == SENDER) 
+  {
     Serial.println(label);
     irsend.sendRaw(rawbuf, rawlen, 38 /* kHz */);
     delay(200);
   } 
-  else if (mode == RECEIVER ) {
+  else if (mode == RECEIVER ) 
+  {
     irrecv.resume(); // Receive the next value
     unsigned long max_time = millis() + 30000;
     Serial.print(label);
-
     // Wait for decode or timeout
-    while (!irrecv.decode(&results)) {
-      if (millis() > max_time) {
+    while (!irrecv.decode(&results)) 
+	{
+      if (millis() > max_time)
+	  {
         Serial.println("Timeout receiving data");
         mode = ERROR;
         return;
@@ -240,13 +239,15 @@ void testRaw(char *label, unsigned int *rawbuf, int rawlen) {
     }
 
     // Received length has extra first element for gap
-    if (rawlen != results.rawlen - 1) {
+    if (rawlen != results.rawlen - 1) 
+	{
       Serial.print("Bad raw length ");
       Serial.println(results.rawlen, DEC);
       mode = ERROR;
       return;
     }
-    for (int i = 0; i < rawlen; i++) {
+    for (int i = 0; i < rawlen; i++) 
+	{
       long got = results.rawbuf[i+1] * USECPERTICK;
       // Adjust for extra duration of marks
       if (i % 2 == 0) { 
@@ -256,7 +257,8 @@ void testRaw(char *label, unsigned int *rawbuf, int rawlen) {
         got += MARK_EXCESS;
       }
       // See if close enough, within 25%
-      if (rawbuf[i] * 1.25 < got || got * 1.25 < rawbuf[i]) {
+      if (rawbuf[i] * 1.25 < got || got * 1.25 < rawbuf[i]) 
+	  {
         Serial.println(": BAD");
         dump(&results);
         mode = ERROR;
@@ -284,14 +286,18 @@ unsigned int sendbuf[] = { /* NEC format */
   560, 1690, 560, 560, 560, 560, 560, 560, /* 8 */
   560};
 
-void loop() {
-  if (mode == SENDER) {
+void loop() 
+{
+  if (mode == SENDER) 
+  {
     delay(2000);  // Delay for more than gap to give receiver a better chance to sync.
   } 
-  else if (mode == RECEIVER) {
+  else if (mode == RECEIVER) 
+  {
     waitForGap(1000);
   } 
-  else if (mode == ERROR) {
+  else if (mode == ERROR)
+  {
     // Light up for 5 seconds for error
     digitalWrite(LED_PIN, HIGH);
     delay(5000);
@@ -323,11 +329,13 @@ void loop() {
   // Then test sending raw and receiving decoded NEC
   // Then test sending NEC and receiving raw
   testRaw("RAW1", sendbuf, 67);
-  if (mode == SENDER) {
+  if (mode == SENDER) 
+  {
     testRaw("RAW2", sendbuf, 67);
     test("RAW3", NEC, 0x12345678, 32);
   } 
-  else {
+  else 
+  {
     test("RAW2", NEC, 0x12345678, 32);
     testRaw("RAW3", sendbuf, 67);
   }
