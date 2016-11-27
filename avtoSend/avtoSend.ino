@@ -43,8 +43,24 @@
 
 #include <IRremote.h>
 
-int RECV_PIN = 11;
-int LED_PIN = 3;
+#define out_run_stop   4          // Сигнал выходной STOP
+#define out_run_rear   5          // Сигнал выходной Назад 
+#define out_fara_size  6          // Сигнал выходной Габариты
+#define out_fara_left  7          // Сигнал выходной Фара левая
+#define out_fara_right 8          // Сигнал выходной Фара правая
+#define out_rele1      9          // Сигнал выходной управления реле 1
+#define out_rele2     10          // Сигнал выходной управления реле 2
+
+#define in_run_stop   A0          // Сигнал входной STOP
+#define in_run_rear   A1          // Сигнал входной Назад 
+#define in_fara_size  A2          // Сигнал входной Габариты
+#define in_fara_left  A3          // Сигнал входной Фара левая
+#define in_fara_right A4          // Сигнал входной Фара правая
+#define in_rele1      A5          // Сигнал входной управления реле 1
+#define in_rele2      A6          // Сигнал входной управления реле 2
+
+int RECV_PIN = 11;                // Сигнал определения приемник или передатчик
+int LED_PIN  = 3;                 // Вход/выход фото- или светодиода
 
 IRrecv irrecv(RECV_PIN);
 IRsend irsend;
@@ -57,16 +73,54 @@ decode_results results;
 
 int mode;
 
+void set_pin()
+{
+                                       
+	pinMode(out_run_stop,  OUTPUT);     // Сигнал выходной STOP
+	pinMode(out_run_rear,  OUTPUT);     // Сигнал выходной Назад 
+	pinMode(out_fara_size, OUTPUT);     // Сигнал выходной Габариты
+	pinMode(out_fara_left, OUTPUT);     // Сигнал выходной Фара левая
+	pinMode(out_fara_right,OUTPUT);     // Сигнал выходной Фара правая
+	pinMode(out_rele1,     OUTPUT);     // Сигнал выходной управления реле 1
+	pinMode(out_rele2,     OUTPUT);     // Сигнал выходной управления реле 2
+	pinMode(LED_PIN,       OUTPUT);     // Сигнал определения приемник или передатчик
+
+	pinMode(in_run_stop,  INPUT);       // Сигнал входной STOP
+	pinMode(in_run_rear,  INPUT);       // Сигнал входной Назад 
+	pinMode(in_fara_size, INPUT);       // Сигнал входной Габариты
+	pinMode(in_fara_left, INPUT);       // Сигнал входной Фара левая
+	pinMode(in_fara_right,INPUT);       // Сигнал входной Фара правая
+	pinMode(in_rele1,     INPUT);       // Сигнал входной управления реле 1
+	pinMode(in_rele2,     INPUT);       // Сигнал входной управления реле 2
+
+	digitalWrite(out_run_stop,  LOW);   // Сигнал выходной STOP отключить
+	digitalWrite(out_run_rear,  LOW);   // Сигнал выходной Назад отключить 
+	digitalWrite(out_fara_size, LOW);   // Сигнал выходной Габариты отключить
+	digitalWrite(out_fara_left, LOW);   // Сигнал выходной Фара левая отключить
+	digitalWrite(out_fara_right,LOW);   // Сигнал выходной Фара правая отключить
+	digitalWrite(out_rele1,     LOW);   // Сигнал выходной управления реле 1 отключить
+	digitalWrite(out_rele2,     LOW);   // Сигнал выходной управления реле 2 отключить
+	digitalWrite(LED_PIN,       LOW);   // Сигнал определения приемник или передатчик отключить
+
+	digitalWrite(in_run_stop,  HIGH);   // Сигнал входной STOP подключить резистор
+	digitalWrite(in_run_rear,  HIGH);   // Сигнал входной Назад  подключить резистор
+	digitalWrite(in_fara_size, HIGH);   // Сигнал входной Габариты подключить резистор
+	digitalWrite(in_fara_left, HIGH);   // Сигнал входной Фара левая подключить резистор
+	digitalWrite(in_fara_right,HIGH);   // Сигнал входной Фара правая подключить резистор
+	digitalWrite(in_rele1,     HIGH);   // Сигнал входной управления реле 1 подключить резистор
+	digitalWrite(in_rele2,     HIGH);   // Сигнал входной управления реле 2 подключить резистор
+}
+
+
 void setup()
 {
   Serial.begin(9600);
-  // Check RECV_PIN to decide if we're RECEIVER or SENDER
-  if (digitalRead(RECV_PIN) == HIGH) 
+  set_pin();
+ 
+  if (digitalRead(RECV_PIN) == HIGH) // Проверка RECV_PIN, чтобы решить, если мы ПРИЕМНИК или ПЕРЕДАТЧИК
   {
     mode = RECEIVER;
     irrecv.enableIRIn();
-    pinMode(LED_PIN, OUTPUT);
-    digitalWrite(LED_PIN, LOW);
     Serial.println("Receiver mode");
   } 
   else 

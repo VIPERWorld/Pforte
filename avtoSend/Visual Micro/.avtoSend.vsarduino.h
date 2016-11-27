@@ -84,6 +84,7 @@ extern "C" void __cxa_pure_virtual() {;}
 #define portInputRegister(P)
 #define portModeRegister(P)
 
+void set_pin();
 //
 void waitForGap(int gap);
 void dump(decode_results *results);

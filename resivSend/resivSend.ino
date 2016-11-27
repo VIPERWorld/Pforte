@@ -61,6 +61,7 @@
 #define in_fara_right A4          // Сигнал входной Фара правая
 #define in_rele1      A5          // Сигнал входной управления реле 1
 #define in_rele2      A6          // Сигнал входной управления реле 2
+#define in_test       12          // Сигнал входной кнопка тест
 
 
 
@@ -127,6 +128,9 @@ void set_pin()
     pinMode(in_fara_right,INPUT);       // Сигнал входной Фара правая
     pinMode(in_rele1,     INPUT);       // Сигнал входной управления реле 1
     pinMode(in_rele2,     INPUT);       // Сигнал входной управления реле 2
+ 	pinMode(in_test,      INPUT);       // Сигнал входной кнопка тест
+
+
 
     digitalWrite(out_run_stop,  LOW);   // Сигнал выходной STOP отключить
     digitalWrite(out_run_rear,  LOW);   // Сигнал выходной Назад отключить 
@@ -144,6 +148,7 @@ void set_pin()
     digitalWrite(in_fara_right,HIGH);   // Сигнал входной Фара правая подключить резистор
     digitalWrite(in_rele1,     HIGH);   // Сигнал входной управления реле 1 подключить резистор
     digitalWrite(in_rele2,     HIGH);   // Сигнал входной управления реле 2 подключить резистор
+	digitalWrite(in_test,      HIGH);   // Сигнал входной кнопка тест подключить резистор
 }
 
  
@@ -153,7 +158,6 @@ void ac_send_code(unsigned long code)
   Serial.print(code, BIN);
   Serial.print(" : ");
   Serial.println(code, HEX);
-
   irsend.sendLG(code, 28);
 }
 
@@ -244,17 +248,18 @@ void ac_air_clean(int air_clean)
 void setup()
 {
   Serial.begin(38400);
-  delay(1000);
+  set_pin();
+//  delay(1000);
   Wire.begin(7);
   Wire.onReceive(receiveEvent);
 
   Serial.println("  - - - T E S T - - -   ");
 
  //  test
-    ac_activate(25, 1);
+ /*   ac_activate(25, 1);
     delay(5000);
     ac_activate(27, 2);
-    delay(5000);
+    delay(5000);*/
 
   
 }
@@ -262,99 +267,123 @@ void setup()
 void loop()
 {
 
+	if(digitalRead(in_test) == false)
+	{
+		for(int i = 4; i<11;i++)
+		{
 
-  ac_activate(25, 1);
-  delay(5000);
-  ac_activate(27, 0);
-  delay(5000);
+		  digitalWrite(i, HIGH);   // Сигнал  
+		  delay(300); 
+		  digitalWrite(i, LOW);    // Сигнал  
+		  delay(300);
+		}
+
+		for(int i = 0; i<256;i++)
+		{
+
+			  analogWrite(5, i);   // Сигнал  
+	  		  delay(20);
+
+		}
+		delay(1000);
+		analogWrite(5, 0);         // Сигнал  
+	}
+	else
+	{
+		  ac_activate(25, 1);
+		  delay(100);
+		  ac_activate(27, 0);
+		  delay(100);
 
 
-  if ( r != o_r) 
-  {
+		  if ( r != o_r) 
+		  {
 
-    /*
-    # a : mode or temp    b : air_flow, temp, swing, clean, cooling/heating
-    # 18 ~ 30 : temp      0 ~ 2 : flow // on
-    # 0 : off             0
-    # 1 : on              0
-    # 2 : air_swing       0 or 1
-    # 3 : air_clean       0 or 1
-    # 4 : air_flow        0 ~ 2 : flow
-    # 5 : temp            18 ~ 30
-    # + : temp + 1
-    # - : temp - 1
-    # m : change cooling to air clean, air clean to cooling
-    */
-    Serial.print("a : ");
-    Serial.print(a);
-    Serial.print("  b : ");
-    Serial.println(b);
+			/*
+			# a : mode or temp    b : air_flow, temp, swing, clean, cooling/heating
+			# 18 ~ 30 : temp      0 ~ 2 : flow // on
+			# 0 : off             0
+			# 1 : on              0
+			# 2 : air_swing       0 or 1
+			# 3 : air_clean       0 or 1
+			# 4 : air_flow        0 ~ 2 : flow
+			# 5 : temp            18 ~ 30
+			# + : temp + 1
+			# - : temp - 1
+			# m : change cooling to air clean, air clean to cooling
+			*/
+			Serial.print("a : ");
+			Serial.print(a);
+			Serial.print("  b : ");
+			Serial.println(b);
 
-    switch (a) {
-      case 0: // off
-        ac_power_down();
-        break;
-      case 1: // on
-        ac_activate(AC_TEMPERATURE, AC_FLOW);
-        break;
-      case 2:
-        if ( b == 0 | b == 1 ) {
-          ac_change_air_swing(b);
-        }
-        break;
-      case 3: // 1  : clean on, power on
-        if ( b == 0 | b == 1 ) {
-          ac_air_clean(b);
-        }
-        break;
-      case 4:
-        if ( 0 <= b && b <= 2  ) {
-          ac_activate(AC_TEMPERATURE, b);
-        }
-        break;
-      case 5:
-        if (18 <= b && b <= 30  ) {
-          ac_activate(b, AC_FLOW);
-        }
-        break;
-      case '+':
-        if ( 18 <= AC_TEMPERATURE && AC_TEMPERATURE <= 29 ) {
-          ac_activate((AC_TEMPERATURE + 1), AC_FLOW);
-        }
-        break;
-      case '-':
-        if ( 19 <= AC_TEMPERATURE && AC_TEMPERATURE <= 30 ) {
-          ac_activate((AC_TEMPERATURE - 1), AC_FLOW);
-        }
-        break;
-      case 'm':
-        /*
-          if ac is on,  1) turn off, 2) turn on ac_air_clean(1)
-          if ac is off, 1) turn on,  2) turn off ac_air_clean(0)
-        */
-        if ( AC_POWER_ON == 1 ) {
-          ac_power_down();
-          delay(100);
-          ac_air_clean(1);
-        } else {
-          if ( AC_AIR_ACLEAN == 1) {
-            ac_air_clean(0);
-            delay(100);
-          }
-          ac_activate(AC_TEMPERATURE, AC_FLOW);
-        }
-        break;
-      default:
-        if ( 18 <= a && a <= 30 ) {
-          if ( 0 <= b && b <= 2 ) {
-            ac_activate(a, b);
-          }
-        }
-    }
+			switch (a) 
+			{
+			  case 0: // off
+				ac_power_down();
+				break;
+			  case 1: // on
+				ac_activate(AC_TEMPERATURE, AC_FLOW);
+				break;
+			  case 2:
+				if ( b == 0 | b == 1 ) {
+				  ac_change_air_swing(b);
+				}
+				break;
+			  case 3: // 1  : clean on, power on
+				if ( b == 0 | b == 1 ) {
+				  ac_air_clean(b);
+				}
+				break;
+			  case 4:
+				if ( 0 <= b && b <= 2  ) {
+				  ac_activate(AC_TEMPERATURE, b);
+				}
+				break;
+			  case 5:
+				if (18 <= b && b <= 30  ) {
+				  ac_activate(b, AC_FLOW);
+				}
+				break;
+			  case '+':
+				if ( 18 <= AC_TEMPERATURE && AC_TEMPERATURE <= 29 ) {
+				  ac_activate((AC_TEMPERATURE + 1), AC_FLOW);
+				}
+				break;
+			  case '-':
+				if ( 19 <= AC_TEMPERATURE && AC_TEMPERATURE <= 30 ) {
+				  ac_activate((AC_TEMPERATURE - 1), AC_FLOW);
+				}
+				break;
+			  case 'm':
+				/*
+				  if ac is on,  1) turn off, 2) turn on ac_air_clean(1)
+				  if ac is off, 1) turn on,  2) turn off ac_air_clean(0)
+				*/
+				if ( AC_POWER_ON == 1 ) {
+				  ac_power_down();
+				  delay(100);
+				  ac_air_clean(1);
+				} else {
+				  if ( AC_AIR_ACLEAN == 1) {
+					ac_air_clean(0);
+					delay(100);
+				  }
+				  ac_activate(AC_TEMPERATURE, AC_FLOW);
+				}
+				break;
+			  default:
+				if ( 18 <= a && a <= 30 ) {
+				  if ( 0 <= b && b <= 2 ) {
+					ac_activate(a, b);
+				  }
+				}
+			}
 
-    o_r = r ;
-  }
-  delay(100);
+			o_r = r ;
+		  }
+			delay(100);
+	 }
 }
 
 
