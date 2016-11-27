@@ -67,7 +67,7 @@
 
 IRsend irsend;
 // not used
-int RECV_PIN = 11;
+int RECV_PIN = 2;
 IRrecv irrecv (RECV_PIN);
 
 const int AC_TYPE  = 0;
@@ -395,3 +395,28 @@ void receiveEvent(int howMany)
   r = !r ;
 }
 
+/*
+
+#include <IRremote.h>
+
+int RECV_PIN = 2;
+
+IRrecv irrecv(RECV_PIN);
+
+decode_results results;
+
+void setup()
+{
+  Serial.begin(115200);
+  irrecv.enableIRIn(); // Start the receiver
+}
+
+void loop() {
+  if (irrecv.decode(&results)) {
+    Serial.println(results.value, HEX);
+    irrecv.resume(); // Receive the next value
+  }
+  delay(100);
+}
+
+*/
