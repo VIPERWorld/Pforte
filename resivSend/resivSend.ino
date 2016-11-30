@@ -39,16 +39,30 @@
  * Приемник, ища вход на передающем штифтом, который будет указывать
  * Отправитель. Вы должны подключить последовательный порт к приемнику для отладки.
 
+ 1 2FD807F
+ 2 2FD40BF
+ 3 2FDC03F
+ 4 2FD20DF
+ 5 2FDA05F
+ 6 2FD609F
+ 7 2FDE01F
+ 8 2FD10EF
+ 9 2FD906F
+ 0 2FD00FF
+ +v 2FD58A7
+ -v 2FD7887
+ +p 2FDD827
+ -p 2FDF807
+ AV 2FD28D7
+fav 2FD8877
  */
-
-
 
 #include <IRremote.h>
 #include <Wire.h>
 
 #define out_run_stop   4          // Сигнал выходной STOP
-#define out_run_rear   5          // Сигнал выходной Назад 
-#define out_fara_size  6          // Сигнал выходной Габариты
+#define out_fara_size  5          // Сигнал выходной Габариты
+#define out_run_rear   6          // Сигнал выходной Назад 
 #define out_fara_left  7          // Сигнал выходной Фара левая
 #define out_fara_right 8          // Сигнал выходной Фара правая
 #define out_rele1      9          // Сигнал выходной управления реле 1
@@ -61,53 +75,32 @@
 #define in_fara_right A4          // Сигнал входной Фара правая
 #define in_rele1      A5          // Сигнал входной управления реле 1
 #define in_rele2      A6          // Сигнал входной управления реле 2
-#define in_test       12          // Сигнал входной кнопка тест
 
+#define in_test   12              // Сигнал входной кнопка тест 
+#define in_send_rec    2          // Сигнал входной определения приемник или передатчик
 
 
 IRsend irsend;
-// not used
-int RECV_PIN = 2;
+
+int RECV_PIN = 11;
+
 IRrecv irrecv (RECV_PIN);
 
-const int AC_TYPE  = 0;
-// 0 : TOWER
-// 1 : WALL
-//
-
-int AC_HEAT = 0;
-// 0 : cooling
-// 1 : heating
-
-int AC_POWER_ON    = 0;
-// 0 : off
-// 1 : on
-
-int AC_AIR_ACLEAN  = 0;
-// 0 : off
-// 1 : on --> power on
-
-int AC_TEMPERATURE = 27;
-// temperature : 18 ~ 30
-
-int AC_FLOW        = 1;
-// 0 : low
-// 1 : mid
-// 2 : high
-// if AC_TYPE =1, 3 : change
-//
-
-
-const int AC_FLOW_TOWER[3] = {0, 4, 6};
-const int AC_FLOW_WALL[4]  = {0, 2, 4, 5};
+decode_results results;
 
 unsigned long AC_CODE_TO_SEND;
 
-int r = LOW;
-int o_r = LOW;
+int o_r = 0;
+int r_send = 20;
 
-byte a, b;
-
+void ac_send_code(unsigned long code)
+{
+  Serial.print("code to send : ");
+  Serial.print(code, BIN);
+  Serial.print(" : ");
+  Serial.println(code, HEX);
+  irsend.sendLG(code, 28);
+}
 
 void set_pin()
 {
@@ -119,8 +112,7 @@ void set_pin()
     pinMode(out_fara_right,OUTPUT);     // Сигнал выходной Фара правая
     pinMode(out_rele1,     OUTPUT);     // Сигнал выходной управления реле 1
     pinMode(out_rele2,     OUTPUT);     // Сигнал выходной управления реле 2
-  //  pinMode(LED_PIN,       OUTPUT);     // Сигнал определения приемник или передатчик
-
+ 
     pinMode(in_run_stop,  INPUT);       // Сигнал входной STOP
     pinMode(in_run_rear,  INPUT);       // Сигнал входной Назад 
     pinMode(in_fara_size, INPUT);       // Сигнал входной Габариты
@@ -129,8 +121,7 @@ void set_pin()
     pinMode(in_rele1,     INPUT);       // Сигнал входной управления реле 1
     pinMode(in_rele2,     INPUT);       // Сигнал входной управления реле 2
  	pinMode(in_test,      INPUT);       // Сигнал входной кнопка тест
-
-
+	pinMode(in_send_rec,  INPUT);       // Сигнал входной  определения приемник или передатчик
 
     digitalWrite(out_run_stop,  LOW);   // Сигнал выходной STOP отключить
     digitalWrite(out_run_rear,  LOW);   // Сигнал выходной Назад отключить 
@@ -139,8 +130,7 @@ void set_pin()
     digitalWrite(out_fara_right,LOW);   // Сигнал выходной Фара правая отключить
     digitalWrite(out_rele1,     LOW);   // Сигнал выходной управления реле 1 отключить
     digitalWrite(out_rele2,     LOW);   // Сигнал выходной управления реле 2 отключить
-  //  digitalWrite(LED_PIN,       LOW);   // Сигнал определения приемник или передатчик отключить
-
+ 
     digitalWrite(in_run_stop,  HIGH);   // Сигнал входной STOP подключить резистор
     digitalWrite(in_run_rear,  HIGH);   // Сигнал входной Назад  подключить резистор
     digitalWrite(in_fara_size, HIGH);   // Сигнал входной Габариты подключить резистор
@@ -149,274 +139,285 @@ void set_pin()
     digitalWrite(in_rele1,     HIGH);   // Сигнал входной управления реле 1 подключить резистор
     digitalWrite(in_rele2,     HIGH);   // Сигнал входной управления реле 2 подключить резистор
 	digitalWrite(in_test,      HIGH);   // Сигнал входной кнопка тест подключить резистор
+	digitalWrite(in_send_rec,  HIGH);   // Сигнал входной  определения приемник или передатчик
+}
+
+void recv_avto()      // Прием и расшифровка кода
+{
+	if (irrecv.decode(&results)) 
+	{
+		Serial.println(results.value, HEX);            //"показываем" принятый код
+
+//1	
+		if (results.value == 0x2FD807F) 
+		{  
+			digitalWrite(out_run_stop, HIGH);         // 1 Сигнал выходной STOP on
+		}   
+		else if (results.value == 0x2FD40BF) 
+		{  
+			digitalWrite(out_run_stop, LOW);         // 2 Сигнал выходной STOP off
+		}   
+//2
+		else if (results.value == 0x2FDC03F) 
+		{  
+			analogWrite(out_fara_size, 60);       // 3 Сигнал выходной Габариты on 50%    
+		}   
+		else if (results.value == 0x2FD20DF) 
+		{ 
+			digitalWrite(out_fara_size, HIGH);       // 4 Сигнал выходной Габариты off 100%
+		}  
+		else if (results.value == 0x2FDA05F) 
+		{  
+			digitalWrite(out_fara_size, LOW);       // 5 Сигнал выходной Габариты off
+		}   
+//3
+		if (results.value == 0x2FD609F) 
+		{  
+			digitalWrite(out_run_rear, HIGH);       // 6 Сигнал выходной Назад on
+		}   
+		else if (results.value == 0x2FDE01F) 
+		{  
+			digitalWrite(out_run_rear, LOW);        // 7 Сигнал выходной Назад off
+		}   
+//4
+		else if (results.value == 0x2FD10EF) 
+		{  
+			digitalWrite(out_fara_left, HIGH);     // 8 Сигнал выходной Фара левая on
+		}   
+		else if (results.value == 0x2FD906F) 
+		{ 
+			digitalWrite(out_fara_left, LOW);      // 9 Сигнал выходной Фара левая off
+		}  
+//5		
+		else if (results.value == 0x2FD00FF) 
+		{  
+			digitalWrite(out_fara_right, HIGH);    // 0 Сигнал выходной Фара правая on
+		}   
+		else if (results.value == 0x2FD58A7) 
+		{  
+			digitalWrite(out_fara_right, LOW);     // v+ Сигнал выходной Фара правая off 
+		}   
+//6
+		else if (results.value == 0x2FD7887) 
+		{  
+			digitalWrite(out_rele1, HIGH);        // v- Сигнал выходной управления реле 1 on
+		}   
+		else if (results.value == 0x2FDD827) 
+		{ 
+			digitalWrite(out_rele1, LOW);   // +p Сигнал выходной управления реле 1 off
+		}  
+//7
+		else if (results.value == 0x2FDF807) 
+		{  
+			digitalWrite(out_rele2, HIGH);  // -p Сигнал выходной управления реле 2 on
+		}   
+		else if (results.value == 0x2FD28D7) 
+		{  
+			digitalWrite(out_rele2, LOW);   // AV Сигнал выходной управления реле 2 off
+		}   
+
+		irrecv.resume();                   // Receive the next value
+	}
+	delay(100);
+}
+
+void send_avto(int r)
+{
+  if ( r != o_r) 
+  {
+    switch (r) 
+	{
+		case 0:           //  
+			AC_CODE_TO_SEND = 0x2FD807F; 
+		break;
+		case 1:           //  
+			AC_CODE_TO_SEND = 0x2FD40BF;
+		break;
+		case 2:          //
+			AC_CODE_TO_SEND = 0x2FDC03F;
+		break;
+		case 3:          // 
+			AC_CODE_TO_SEND = 0x2FD20DF;
+		break;
+		case 4:         //
+			AC_CODE_TO_SEND = 0x2FDA05F;
+		break;
+		case 5:         //
+			AC_CODE_TO_SEND = 0x2FD609F;
+		break;
+		case 6:
+			AC_CODE_TO_SEND = 0x2FDE01F;
+		break;
+		case 7:
+			AC_CODE_TO_SEND = 0x2FD10EF;  
+		break;
+		case 8:
+			AC_CODE_TO_SEND = 0x2FD906F; 
+		break;
+		case 9:
+			AC_CODE_TO_SEND = 0x2FD00FF;
+		break;
+		case 10:
+			AC_CODE_TO_SEND = 0x2FD58A7;
+		break;
+		case 11:
+			AC_CODE_TO_SEND = 0x2FD7887;
+		break;
+		case 12:
+			AC_CODE_TO_SEND = 0x2FDD827;
+		break;
+		case 13:
+			AC_CODE_TO_SEND = 0x2FDF807;
+		break;
+		case 14:
+			AC_CODE_TO_SEND = 0x2FD28D7;
+		break;
+		default:
+		break;
+    }
+	 ac_send_code(AC_CODE_TO_SEND);
+    o_r = r ;
+  }
 }
 
  
-void ac_send_code(unsigned long code)
-{
-  Serial.print("code to send : ");
-  Serial.print(code, BIN);
-  Serial.print(" : ");
-  Serial.println(code, HEX);
-  irsend.sendLG(code, 28);
-}
-
-void ac_activate(int temperature, int air_flow)
-{
-
-  int AC_MSBITS1 = 8;
-  int AC_MSBITS2 = 8;
-  int AC_MSBITS3 = 0;
-  int AC_MSBITS4 ;
-  if ( AC_HEAT == 1 ) 
-  {
-    // heating
-    AC_MSBITS4 = 4;
-  } 
-  else 
-  {
-    // cooling
-    AC_MSBITS4 = 0;
-  }
-  int AC_MSBITS5 = temperature - 15;
-  int AC_MSBITS6 ;
-
-  if ( AC_TYPE == 0) {
-    AC_MSBITS6 = AC_FLOW_TOWER[air_flow];
-  } else {
-    AC_MSBITS6 = AC_FLOW_WALL[air_flow];
-  }
-
-  int AC_MSBITS7 = (AC_MSBITS3 + AC_MSBITS4 + AC_MSBITS5 + AC_MSBITS6) & B00001111;
-
-  AC_CODE_TO_SEND =  AC_MSBITS1 << 4 ;
-  AC_CODE_TO_SEND =  (AC_CODE_TO_SEND + AC_MSBITS2) << 4;
-  AC_CODE_TO_SEND =  (AC_CODE_TO_SEND + AC_MSBITS3) << 4;
-  AC_CODE_TO_SEND =  (AC_CODE_TO_SEND + AC_MSBITS4) << 4;
-  AC_CODE_TO_SEND =  (AC_CODE_TO_SEND + AC_MSBITS5) << 4;
-  AC_CODE_TO_SEND =  (AC_CODE_TO_SEND + AC_MSBITS6) << 4;
-  AC_CODE_TO_SEND =  (AC_CODE_TO_SEND + AC_MSBITS7);
-
-  ac_send_code(AC_CODE_TO_SEND);
-
-  AC_POWER_ON = 1;
-  AC_TEMPERATURE = temperature;
-  AC_FLOW = air_flow;
-}
-
-void ac_change_air_swing(int air_swing)
-{
-  if ( AC_TYPE == 0) {
-    if ( air_swing == 1) {
-      AC_CODE_TO_SEND = 0x881316B;
-    } else {
-      AC_CODE_TO_SEND = 0x881317C;
-    }
-  } else {
-    if ( air_swing == 1) {
-      AC_CODE_TO_SEND = 0x8813149;
-    } else {
-      AC_CODE_TO_SEND = 0x881315A;
-    }
-  }
-
-  ac_send_code(AC_CODE_TO_SEND);
-}
-
-void ac_power_down()
-{
-  AC_CODE_TO_SEND = 0x88C0051;
-
-  ac_send_code(AC_CODE_TO_SEND);
-
-  AC_POWER_ON = 0;
-}
-
-void ac_air_clean(int air_clean)
-{
-  if ( air_clean == 1) {
-    AC_CODE_TO_SEND = 0x88C000C;
-  } else {
-    AC_CODE_TO_SEND = 0x88C0084;
-  }
-
-  ac_send_code(AC_CODE_TO_SEND);
-
-  AC_AIR_ACLEAN = air_clean;
-}
-
 void setup()
 {
-  Serial.begin(38400);
-  set_pin();
-//  delay(1000);
-  Wire.begin(7);
-  Wire.onReceive(receiveEvent);
-
-  Serial.println("  - - - T E S T - - -   ");
-
- //  test
- /*   ac_activate(25, 1);
-    delay(5000);
-    ac_activate(27, 2);
-    delay(5000);*/
-
-  
+  Serial.begin(115200);
+   set_pin();
+  irrecv.enableIRIn();             // Start the receiver
+    Serial.println("  - - - START - - -   ");
 }
 
 void loop()
 {
-
-	if(digitalRead(in_test) == false)
+	if(digitalRead(in_send_rec) == false)          // Определен приемник
 	{
-		for(int i = 4; i<11;i++)
+		if(digitalRead(in_test) == false)          // Тестировать приемник
 		{
-
-		  digitalWrite(i, HIGH);   // Сигнал  
-		  delay(300); 
-		  digitalWrite(i, LOW);    // Сигнал  
-		  delay(300);
-		}
-
-		for(int i = 0; i<256;i++)
-		{
-
-			  analogWrite(5, i);   // Сигнал  
-	  		  delay(20);
-
-		}
-		delay(1000);
-		analogWrite(5, 0);         // Сигнал  
-	}
-	else
-	{
-		  ac_activate(25, 1);
-		  delay(100);
-		  ac_activate(27, 0);
-		  delay(100);
-
-
-		  if ( r != o_r) 
-		  {
-
-			/*
-			# a : mode or temp    b : air_flow, temp, swing, clean, cooling/heating
-			# 18 ~ 30 : temp      0 ~ 2 : flow // on
-			# 0 : off             0
-			# 1 : on              0
-			# 2 : air_swing       0 or 1
-			# 3 : air_clean       0 or 1
-			# 4 : air_flow        0 ~ 2 : flow
-			# 5 : temp            18 ~ 30
-			# + : temp + 1
-			# - : temp - 1
-			# m : change cooling to air clean, air clean to cooling
-			*/
-			Serial.print("a : ");
-			Serial.print(a);
-			Serial.print("  b : ");
-			Serial.println(b);
-
-			switch (a) 
+			for(int i = 4; i<11;i++)
 			{
-			  case 0: // off
-				ac_power_down();
-				break;
-			  case 1: // on
-				ac_activate(AC_TEMPERATURE, AC_FLOW);
-				break;
-			  case 2:
-				if ( b == 0 | b == 1 ) {
-				  ac_change_air_swing(b);
-				}
-				break;
-			  case 3: // 1  : clean on, power on
-				if ( b == 0 | b == 1 ) {
-				  ac_air_clean(b);
-				}
-				break;
-			  case 4:
-				if ( 0 <= b && b <= 2  ) {
-				  ac_activate(AC_TEMPERATURE, b);
-				}
-				break;
-			  case 5:
-				if (18 <= b && b <= 30  ) {
-				  ac_activate(b, AC_FLOW);
-				}
-				break;
-			  case '+':
-				if ( 18 <= AC_TEMPERATURE && AC_TEMPERATURE <= 29 ) {
-				  ac_activate((AC_TEMPERATURE + 1), AC_FLOW);
-				}
-				break;
-			  case '-':
-				if ( 19 <= AC_TEMPERATURE && AC_TEMPERATURE <= 30 ) {
-				  ac_activate((AC_TEMPERATURE - 1), AC_FLOW);
-				}
-				break;
-			  case 'm':
-				/*
-				  if ac is on,  1) turn off, 2) turn on ac_air_clean(1)
-				  if ac is off, 1) turn on,  2) turn off ac_air_clean(0)
-				*/
-				if ( AC_POWER_ON == 1 ) {
-				  ac_power_down();
-				  delay(100);
-				  ac_air_clean(1);
-				} else {
-				  if ( AC_AIR_ACLEAN == 1) {
-					ac_air_clean(0);
-					delay(100);
-				  }
-				  ac_activate(AC_TEMPERATURE, AC_FLOW);
-				}
-				break;
-			  default:
-				if ( 18 <= a && a <= 30 ) {
-				  if ( 0 <= b && b <= 2 ) {
-					ac_activate(a, b);
-				  }
-				}
+			  digitalWrite(i, HIGH);              // Сигнал  
+			  delay(300); 
+			  digitalWrite(i, LOW);               // Сигнал  
+			  delay(300);
 			}
+			for(int i = 0; i<256;i++)
+			{
+				  analogWrite(5, i);              // Сигнал  
+	  			  delay(20);
+			}
+			delay(1000);
+			analogWrite(5, 0);                    // Сигнал  
+		}
+		else
+		{
+			recv_avto();                          // Принять сигнал
+		    delay(100);
+		}
+	}
+	else                                          // Определен передатчик                 
+	{
+        if(digitalRead(in_test) == false)         // Тестировать передатчик
+		{
+			for(int i=0;i<15;i++)
+				{
+					send_avto(i);
+					delay(1000); 
+				}
+        }
+		else                                  
+		{
+           if(digitalRead(in_run_stop) == false)     // 1
+			   {
+				   r_send = 0;
+				   send_avto(r_send);
+		       }
+			   else
+		   	   {
+				   r_send = 1;
+				   send_avto(r_send);
+		       }
+		  /* 
+		   if(digitalRead(in_run_rear) == false)    // 2
+			   {
+				   r_send = 2;
+				   send_avto(r_send);
+				  // Serial.println();
+		       }
+	   		else
+		   	   {
+				   r_send = 3;
+				   send_avto(r_send);
+		       }
+		   */
+			   
+          if(digitalRead(in_fara_size) == false)    // 3
+			   {
+				   r_send = 4;
+				   send_avto(r_send);
+		       }
+		 	   else
+		   	   {
+				   r_send = 5;
+				   send_avto(r_send);
+		       }
+		 /*
+		  if(digitalRead(in_fara_left) == false)    // 4
+			   {
+				   r_send = 6;
+				   send_avto(r_send);
+		       }
+			   else
+		   	   {
+				   r_send = 7;
+				   send_avto(r_send);
+		       }
 
-			o_r = r ;
-		  }
-			delay(100);
-	 }
+          if(digitalRead(in_fara_right) == false)    // 5
+			   {
+				   r_send = 8;
+				   send_avto(r_send);
+		       }
+		 	   else
+		   	   {
+				   r_send = 9;
+				   send_avto(r_send);
+		       }
+		 if(digitalRead(in_rele1) == false)    // 6
+			   {
+				   r_send = 10;
+				   send_avto(r_send);
+		       }
+		 	   else
+		   	   {
+				   r_send = 11;
+				   send_avto(r_send);
+		       }
+         if(digitalRead(in_rele2) == false)    // 7
+			   {
+				   r_send = 12;
+				   send_avto(r_send);
+		       }
+		 	   else
+		   	   {
+				   r_send = 0;
+				   send_avto(r_send);
+		       }
+
+		 */
+		 //if(digitalRead( == false))    // 8
+			//   {
+			//	   r_send = 13;
+			//	   send_avto(r_send);
+		 //      }
+		 //	   else
+		 //  	   {
+			//	   r_send = 14;
+			//	   send_avto(r_send);
+		 //      }
+
+		  delay(200);
+		}
+	}
 }
-
-
-
-void receiveEvent(int howMany)
-{
-  a = Wire.read();
-  b = Wire.read();
-  r = !r ;
-}
-
-/*
-
-#include <IRremote.h>
-
-int RECV_PIN = 2;
-
-IRrecv irrecv(RECV_PIN);
-
-decode_results results;
-
-void setup()
-{
-  Serial.begin(115200);
-  irrecv.enableIRIn(); // Start the receiver
-}
-
-void loop() {
-  if (irrecv.decode(&results)) {
-    Serial.println(results.value, HEX);
-    irrecv.resume(); // Receive the next value
-  }
-  delay(100);
-}
-
-*/

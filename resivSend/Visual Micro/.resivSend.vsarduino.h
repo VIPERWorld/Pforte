@@ -84,15 +84,12 @@ extern "C" void __cxa_pure_virtual() {;}
 #define portInputRegister(P)
 #define portModeRegister(P)
 
-void set_pin();
 void ac_send_code(unsigned long code);
-void ac_activate(int temperature, int air_flow);
-void ac_change_air_swing(int air_swing);
-void ac_power_down();
-void ac_air_clean(int air_clean);
+void set_pin();
+void recv_avto();
+void send_avto(int r);
 //
 //
-void receiveEvent(int howMany);
 
 #include <resivSend.ino>
 #endif
