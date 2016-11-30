@@ -79,6 +79,22 @@ fav 2FD8877
 #define in_test   12              // Сигнал входной кнопка тест 
 #define in_send_rec    2          // Сигнал входной определения приемник или передатчик
 
+bool b_run_stop   = false ;       // Сигнал входной STOP
+bool b_run_rear   = false ;       // Сигнал входной Назад 
+bool b_fara_size  = false ;       // Сигнал входной Габариты
+bool b_fara_left  = false ;       // Сигнал входной Фара левая
+bool b_fara_right = false ;       // Сигнал входной Фара правая
+bool b_rele1      = false ;       // Сигнал входной управления реле 1
+bool b_rele2      = false ;       // Сигнал входной управления реле 2
+
+bool t_run_stop   = false ;       // Сигнал входной STOP
+bool t_run_rear   = false ;       // Сигнал входной Назад 
+bool t_fara_size  = false ;       // Сигнал входной Габариты
+bool t_fara_left  = false ;       // Сигнал входной Фара левая
+bool t_fara_right = false ;       // Сигнал входной Фара правая
+bool t_rele1      = false ;       // Сигнал входной управления реле 1
+bool t_rele2      = false ;       // Сигнал входной управления реле 2
+
 
 IRsend irsend;
 
@@ -104,7 +120,6 @@ void ac_send_code(unsigned long code)
 
 void set_pin()
 {
-                                       
     pinMode(out_run_stop,  OUTPUT);     // Сигнал выходной STOP
     pinMode(out_run_rear,  OUTPUT);     // Сигнал выходной Назад 
     pinMode(out_fara_size, OUTPUT);     // Сигнал выходной Габариты
@@ -328,16 +343,54 @@ void loop()
         }
 		else                                  
 		{
-           if(digitalRead(in_run_stop) == false)     // 1
+
+//bool b_run_stop   false ;         // Сигнал входной STOP
+//bool b_run_rear   false ;         // Сигнал входной Назад 
+//bool b_fara_size  false ;         // Сигнал входной Габариты
+//bool b_fara_left  false ;         // Сигнал входной Фара левая
+//bool b_fara_right false ;         // Сигнал входной Фара правая
+//bool b_rele1      false ;         // Сигнал входной управления реле 1
+//bool b_rele2      false ;         // Сигнал входной управления реле 2
+
+
+			t_run_stop = digitalRead(in_run_stop);
+           if(t_run_stop  != b_run_stop)     // 1
 			   {
-				   r_send = 0;
-				   send_avto(r_send);
+				   b_run_stop = t_run_stop ;
+				   if(!b_run_stop)
+				   {
+					   r_send = 0;
+				       send_avto(r_send);
+				   }
+				   else
+				   {
+                      r_send = 1;
+				      send_avto(r_send);
+				   }
+
 		       }
-			   else
-		   	   {
-				   r_send = 1;
-				   send_avto(r_send);
+
+		  	t_run_rear = digitalRead(in_run_rear);
+           if(t_run_rear  != b_run_rear)     // 1
+			   {
+				   b_run_rear = t_run_rear ;
+				   if(!b_run_rear)
+				   {
+					   r_send = 2;
+				       send_avto(r_send);
+				   }
+				   else
+				   {
+                      r_send = 4;
+				      send_avto(r_send);
+				   }
+
 		       }
+
+
+
+
+
 		  /* 
 		   if(digitalRead(in_run_rear) == false)    // 2
 			   {
@@ -350,7 +403,7 @@ void loop()
 				   r_send = 3;
 				   send_avto(r_send);
 		       }
-		   */
+		
 			   
           if(digitalRead(in_fara_size) == false)    // 3
 			   {
@@ -362,7 +415,7 @@ void loop()
 				   r_send = 5;
 				   send_avto(r_send);
 		       }
-		 /*
+		
 		  if(digitalRead(in_fara_left) == false)    // 4
 			   {
 				   r_send = 6;
