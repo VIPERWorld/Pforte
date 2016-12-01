@@ -68,15 +68,15 @@ fav 2FD8877
 #define out_rele1      9          // Сигнал выходной управления реле 1
 #define out_rele2     10          // Сигнал выходной управления реле 2
 
-#define in_run_stop   A0          // Сигнал входной STOP
-#define in_run_rear   A1          // Сигнал входной Назад 
-#define in_fara_size  A2          // Сигнал входной Габариты
-#define in_fara_left  A3          // Сигнал входной Фара левая
-#define in_fara_right A4          // Сигнал входной Фара правая
-#define in_rele1      A5          // Сигнал входной управления реле 1
+#define in_run_stop   14          // Сигнал входной STOP
+#define in_fara_size  15          // Сигнал входной Габариты
+#define in_run_rear   16          // Сигнал входной Назад 
+#define in_fara_left  17          // Сигнал входной Фара левая
+#define in_fara_right 18          // Сигнал входной Фара правая
+#define in_rele1      19          // Сигнал входной управления реле 1
 #define in_rele2      A6          // Сигнал входной управления реле 2
 
-#define in_test   12              // Сигнал входной кнопка тест 
+#define in_test       12          // Сигнал входной кнопка тест 
 #define in_send_rec    2          // Сигнал входной определения приемник или передатчик
 
 bool b_run_stop   = false ;       // Сигнал входной STOP
@@ -85,7 +85,7 @@ bool b_fara_size  = false ;       // Сигнал входной Габариты
 bool b_fara_left  = false ;       // Сигнал входной Фара левая
 bool b_fara_right = false ;       // Сигнал входной Фара правая
 bool b_rele1      = false ;       // Сигнал входной управления реле 1
-bool b_rele2      = false ;       // Сигнал входной управления реле 2
+bool b_rele2      = false ;       // Сигнал входной управления реле 2 
 
 bool t_run_stop   = false ;       // Сигнал входной STOP
 bool t_run_rear   = false ;       // Сигнал входной Назад 
@@ -94,7 +94,6 @@ bool t_fara_left  = false ;       // Сигнал входной Фара левая
 bool t_fara_right = false ;       // Сигнал входной Фара правая
 bool t_rele1      = false ;       // Сигнал входной управления реле 1
 bool t_rele2      = false ;       // Сигнал входной управления реле 2
-
 
 IRsend irsend;
 
@@ -127,7 +126,7 @@ void set_pin()
     pinMode(out_fara_right,OUTPUT);     // Сигнал выходной Фара правая
     pinMode(out_rele1,     OUTPUT);     // Сигнал выходной управления реле 1
     pinMode(out_rele2,     OUTPUT);     // Сигнал выходной управления реле 2
- 
+
     pinMode(in_run_stop,  INPUT);       // Сигнал входной STOP
     pinMode(in_run_rear,  INPUT);       // Сигнал входной Назад 
     pinMode(in_fara_size, INPUT);       // Сигнал входной Габариты
@@ -135,7 +134,8 @@ void set_pin()
     pinMode(in_fara_right,INPUT);       // Сигнал входной Фара правая
     pinMode(in_rele1,     INPUT);       // Сигнал входной управления реле 1
     pinMode(in_rele2,     INPUT);       // Сигнал входной управления реле 2
- 	pinMode(in_test,      INPUT);       // Сигнал входной кнопка тест
+	
+	pinMode(in_test,      INPUT);       // Сигнал входной кнопка тест
 	pinMode(in_send_rec,  INPUT);       // Сигнал входной  определения приемник или передатчик
 
     digitalWrite(out_run_stop,  LOW);   // Сигнал выходной STOP отключить
@@ -153,6 +153,7 @@ void set_pin()
     digitalWrite(in_fara_right,HIGH);   // Сигнал входной Фара правая подключить резистор
     digitalWrite(in_rele1,     HIGH);   // Сигнал входной управления реле 1 подключить резистор
     digitalWrite(in_rele2,     HIGH);   // Сигнал входной управления реле 2 подключить резистор
+
 	digitalWrite(in_test,      HIGH);   // Сигнал входной кнопка тест подключить резистор
 	digitalWrite(in_send_rec,  HIGH);   // Сигнал входной  определения приемник или передатчик
 }
@@ -175,7 +176,7 @@ void recv_avto()      // Прием и расшифровка кода
 //2
 		else if (results.value == 0x2FDC03F) 
 		{  
-			analogWrite(out_fara_size, 60);       // 3 Сигнал выходной Габариты on 50%    
+			analogWrite(out_fara_size, 60);          // 3 Сигнал выходной Габариты on 50%    
 		}   
 		else if (results.value == 0x2FD20DF) 
 		{ 
@@ -248,6 +249,7 @@ void send_avto(int r)
 		case 1:           //  
 			AC_CODE_TO_SEND = 0x2FD40BF;
 		break;
+	
 		case 2:          //
 			AC_CODE_TO_SEND = 0x2FDC03F;
 		break;
@@ -257,30 +259,35 @@ void send_avto(int r)
 		case 4:         //
 			AC_CODE_TO_SEND = 0x2FDA05F;
 		break;
+		
 		case 5:         //
 			AC_CODE_TO_SEND = 0x2FD609F;
 		break;
 		case 6:
 			AC_CODE_TO_SEND = 0x2FDE01F;
 		break;
+		
 		case 7:
 			AC_CODE_TO_SEND = 0x2FD10EF;  
 		break;
 		case 8:
 			AC_CODE_TO_SEND = 0x2FD906F; 
 		break;
+		
 		case 9:
 			AC_CODE_TO_SEND = 0x2FD00FF;
 		break;
 		case 10:
 			AC_CODE_TO_SEND = 0x2FD58A7;
 		break;
+	
 		case 11:
 			AC_CODE_TO_SEND = 0x2FD7887;
 		break;
 		case 12:
 			AC_CODE_TO_SEND = 0x2FDD827;
 		break;
+		
 		case 13:
 			AC_CODE_TO_SEND = 0x2FDF807;
 		break;
@@ -333,7 +340,9 @@ void loop()
 	}
 	else                                          // Определен передатчик                 
 	{
-        if(digitalRead(in_test) == false)         // Тестировать передатчик
+		bool in_test_t = true;
+	//	digitalRead(in_test
+        if(in_test_t == false)         // Тестировать передатчик
 		{
 			for(int i=0;i<15;i++)
 				{
@@ -343,17 +352,7 @@ void loop()
         }
 		else                                  
 		{
-
-//bool b_run_stop   false ;         // Сигнал входной STOP
-//bool b_run_rear   false ;         // Сигнал входной Назад 
-//bool b_fara_size  false ;         // Сигнал входной Габариты
-//bool b_fara_left  false ;         // Сигнал входной Фара левая
-//bool b_fara_right false ;         // Сигнал входной Фара правая
-//bool b_rele1      false ;         // Сигнал входной управления реле 1
-//bool b_rele2      false ;         // Сигнал входной управления реле 2
-
-
-			t_run_stop = digitalRead(in_run_stop);
+		   t_run_stop = digitalRead(in_run_stop);
            if(t_run_stop  != b_run_stop)     // 1
 			   {
 				   b_run_stop = t_run_stop ;
@@ -369,12 +368,12 @@ void loop()
 				   }
 
 		       }
-
-		  	t_run_rear = digitalRead(in_run_rear);
-           if(t_run_rear  != b_run_rear)     // 1
+		    
+		   t_fara_size = digitalRead(in_fara_size);
+           if(t_fara_size  != b_fara_size)     // 1
 			   {
-				   b_run_rear = t_run_rear ;
-				   if(!b_run_rear)
+				   b_fara_size = t_fara_size ;
+				   if(!b_fara_size)
 				   {
 					   r_send = 2;
 				       send_avto(r_send);
@@ -387,89 +386,90 @@ void loop()
 
 		       }
 
-
-
-
-
-		  /* 
-		   if(digitalRead(in_run_rear) == false)    // 2
+		   t_run_rear = digitalRead(in_run_rear);
+           if(t_run_rear  != b_run_rear)     // 1
 			   {
-				   r_send = 2;
-				   send_avto(r_send);
-				  // Serial.println();
-		       }
-	   		else
-		   	   {
-				   r_send = 3;
-				   send_avto(r_send);
-		       }
-		
-			   
-          if(digitalRead(in_fara_size) == false)    // 3
-			   {
-				   r_send = 4;
-				   send_avto(r_send);
-		       }
-		 	   else
-		   	   {
-				   r_send = 5;
-				   send_avto(r_send);
-		       }
-		
-		  if(digitalRead(in_fara_left) == false)    // 4
-			   {
-				   r_send = 6;
-				   send_avto(r_send);
-		       }
-			   else
-		   	   {
-				   r_send = 7;
-				   send_avto(r_send);
+				   b_run_rear = t_run_rear;
+				   if(!b_run_rear)
+				   {
+					   r_send = 5;
+				       send_avto(r_send);
+				   }
+				   else
+				   {
+                      r_send = 6;
+				      send_avto(r_send);
+				   }
+
 		       }
 
-          if(digitalRead(in_fara_right) == false)    // 5
+		   t_fara_left = digitalRead(in_fara_left);
+           if(t_fara_left  != b_fara_left)     // 1
 			   {
-				   r_send = 8;
-				   send_avto(r_send);
-		       }
-		 	   else
-		   	   {
-				   r_send = 9;
-				   send_avto(r_send);
-		       }
-		 if(digitalRead(in_rele1) == false)    // 6
-			   {
-				   r_send = 10;
-				   send_avto(r_send);
-		       }
-		 	   else
-		   	   {
-				   r_send = 11;
-				   send_avto(r_send);
-		       }
-         if(digitalRead(in_rele2) == false)    // 7
-			   {
-				   r_send = 12;
-				   send_avto(r_send);
-		       }
-		 	   else
-		   	   {
-				   r_send = 0;
-				   send_avto(r_send);
+				   b_fara_left = t_fara_left;
+				   if(!b_fara_left)
+				   {
+					   r_send = 7;
+				       send_avto(r_send);
+				   }
+				   else
+				   {
+                      r_send = 8;
+				      send_avto(r_send);
+				   }
+
 		       }
 
-		 */
-		 //if(digitalRead( == false))    // 8
-			//   {
-			//	   r_send = 13;
-			//	   send_avto(r_send);
-		 //      }
-		 //	   else
-		 //  	   {
-			//	   r_send = 14;
-			//	   send_avto(r_send);
-		 //      }
+		   t_fara_right = digitalRead(in_fara_right);
+           if(t_fara_right  != b_fara_right)     // 1
+			   {
+				   b_fara_right = t_fara_right;
+				   if(!b_fara_right)
+				   {
+					   r_send = 9;
+				       send_avto(r_send);
+				   }
+				   else
+				   {
+                      r_send = 10;
+				      send_avto(r_send);
+				   }
 
+		       }
+
+		   t_rele1 = digitalRead(in_rele1);
+           if(t_rele1  != b_rele1)     // 1
+			   {
+				   b_rele1 = t_rele1;
+				   if(!b_rele1)
+				   {
+					   r_send = 11;
+				       send_avto(r_send);
+				   }
+				   else
+				   {
+                      r_send = 12;
+				      send_avto(r_send);
+				   }
+
+		       }
+
+		   	   t_rele2 = digitalRead(in_rele2);
+           if(t_rele2  != b_rele2)     // 1
+			   {
+				   b_rele2 = t_rele2;
+				   if(!b_rele2)
+				   {
+					   r_send = 13;
+				       send_avto(r_send);
+				   }
+				   else
+				   {
+                      r_send = 14;
+				      send_avto(r_send);
+				   }
+
+		       }
 		  delay(200);
 		}
 	}
