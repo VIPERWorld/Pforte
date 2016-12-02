@@ -74,6 +74,10 @@ fav 2FD8877
 
 #define in_test       12          // Сигнал входной кнопка тест 
 
+bool stop = false;
+bool size = false;
+int stop_size = 60;
+
 int RECV_PIN = 11;
 
 IRrecv irrecv (RECV_PIN);
@@ -113,23 +117,40 @@ void recv_avto()      // Прием и расшифровка кода
 		if (results.value == 0x2FD807F) 
 		{  
 			digitalWrite(out_run_stop, HIGH);         // 1 Сигнал выходной STOP on
+			stop = true;
+			analogWrite(out_fara_size, 255);          // 3 Сигнал выходной Габариты on 
 		}   
-		else if (results.value == 0x2FD40BF) 
+		else if (results.value == 0x2FD40BF)        // Сигнал выходной STOP off
 		{  
-			digitalWrite(out_run_stop, LOW);         // 2 Сигнал выходной STOP off
+			digitalWrite(out_run_stop, LOW);         // 1 Сигнал выходной STOP on
+			stop = false;
+			if(size)
+			{
+                analogWrite(out_fara_size, stop_size);          // 3 Сигнал выходной Габариты on 
+			}
+			else
+			{
+				analogWrite(out_fara_size, 0);          // Сигнал выходной STOP off
+			}
+
 		}   
 //2
 		else if (results.value == 0x2FDC03F) 
 		{  
-			analogWrite(out_fara_size, 60);          // 3 Сигнал выходной Габариты on 50%    
+			stop_size = 60;
+			size = true;
+			if(!stop)
+		    {
+		    	analogWrite(out_fara_size, stop_size);          // 3 Сигнал выходной Габариты on 
+	        }
 		}   
-		else if (results.value == 0x2FD20DF) 
-		{ 
-			digitalWrite(out_fara_size, HIGH);       // 4 Сигнал выходной Габариты off 100%
-		}  
 		else if (results.value == 0x2FDA05F) 
-		{  
-			digitalWrite(out_fara_size, LOW);       // 5 Сигнал выходной Габариты off
+		{ 
+			size = false;
+			if(!stop)
+			{
+				analogWrite(out_fara_size, 0);              // 5 Сигнал выходной Габариты off
+			}
 		}   
 //3
 		if (results.value == 0x2FD609F) 
