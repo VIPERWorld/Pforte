@@ -4,7 +4,7 @@ LABCENTER PROTEUS TOOL INFORMATION FILE
 In case of difficulty, please e-mail support@labcenter.co.uk
 
 Tool set up for Proteus layout 'Pforte1a.pdsprj'.
-CADCAM generated at 23:59:01 on 22 марта 2017 г..
+CADCAM generated at 11:17:12 on 23 марта 2017 г..
 
 File List
 ---------
