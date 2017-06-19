@@ -17,6 +17,7 @@
 #include <MsTimer2.h> 
 #include <Wire.h>
 #include "MCP23017.h"
+#include <RTClib.h>
 
 
 MCP23017 mcp;
@@ -73,11 +74,11 @@ int count                     = 0;
 unsigned long time             = 0;                     // Переменная для суточного сброса
 unsigned long time_day         = 86400;                 // Переменная секунд в сутках
 unsigned long previousMillis   = 0;                     //  
-unsigned long interval         = 360;                   // Интервал передачи данных 5 минут
+unsigned long interval         = 120;                   // Интервал передачи данных 5 минут
 bool time_set                  = false;                 // Фиксировать интервал заданный СМС
 
 bool watch_dog                 = false;                 // Признак проверки сторожевого таймера
-unsigned long time_ping        = 380;                   // Интервал проверки ping 6 минут. 
+unsigned long time_ping        = 80;                    // Интервал проверки ping 6 минут. 
 unsigned long previousPing     = 0;                     // Временный Интервал проверки ping
 
 int Address_tel1            = 100;                        // Адрес в EEPROM телефона 1
@@ -92,6 +93,64 @@ int Address_watchdog        = 270;                        // Адрес в EEPRO
 int Address_EEPROM_off      = 280;                        // Адрес в EEPROM запрет записи в EEPROM
 byte dev3                   = 0;                          // признак управления сполнительного устройства Dev3
 
+														  //+++++++++++++++++++++++++++ Настройка часов +++++++++++++++++++++++++++++++
+uint8_t second = 0;                                    //Initialization time
+uint8_t minute = 10;
+uint8_t hour = 10;
+uint8_t dow = 2;
+uint8_t day = 15;
+uint8_t month = 3;
+uint16_t year = 16;
+RTC_DS1307 RTC;
+const char* str[] = { "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN" };
+const char* str1[] = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+const char* str_mon[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+
+
+void serial_print_date()                           // Печать даты и времени
+{
+	DateTime now = RTC.now();
+	Serial.print(now.day(), DEC);
+	Serial.print('/');
+	Serial.print(now.month(), DEC);
+	Serial.print('/');
+	Serial.print(now.year(), DEC);
+	Serial.print(' ');
+	Serial.print(now.hour(), DEC);
+	Serial.print(':');
+	Serial.print(now.minute(), DEC);
+	Serial.print(':');
+	Serial.print(now.second(), DEC);
+	Serial.print("  ");
+	Serial.println(str1[now.dayOfWeek() - 1]);
+}
+void clock_read()
+{
+	DateTime now = RTC.now();
+	second = now.second();
+	minute = now.minute();
+	hour = now.hour();
+	dow = now.dayOfWeek();
+	day = now.day();
+	month = now.month();
+	year = now.year();
+}
+
+void set_time()
+{
+	RTC.adjust(DateTime(__DATE__, __TIME__));
+	DateTime now = RTC.now();
+	second = now.second();       //Initialization time
+	minute = now.minute();
+	hour = now.hour();
+	day = now.day();
+	day++;
+	if (day > 31)day = 1;
+	month = now.month();
+	year = now.year();
+	DateTime set_time = DateTime(year, month, day, hour, minute, second); // Занести данные о времени в строку "set_time"
+	RTC.adjust(set_time);
+}
 
 
 void flash_time()                                       // Программа обработчик прерывистого свечения светодиодов при старте
@@ -440,12 +499,15 @@ void test_MCP23017()
 		Serial.println(mcp.digitalRead(i));
 
 	}
+	con.println(F("Start OUT"));
 	for (int i = 0; i < 8; i++)
 	{
+		con.print(F("Start "));
+		con.println(i);
 		mcp.digitalWrite(i, HIGH);
-		delay(2000);
+		delay(400);
 		mcp.digitalWrite(i, LOW);
-		delay(2000);
+		delay(400);
 	}
 
 }
@@ -582,7 +644,15 @@ void setup()
 
 	mcp.begin(1);      // use default address 0
 	setup_MCP23017();
-
+	Wire.begin();
+	if (!RTC.begin())                                      // Настройка часов
+	{
+		Serial.println(F("RTC failed"));
+		while (1);
+	};
+	serial_print_date();
+	//DateTime set_time = DateTime(17, 6, 19, 21, 38, 0);  // Занести данные о времени в строку "set_time" год, месяц, число, время...
+	//RTC.adjust(set_time);                                // Записать дату
 	wdt_enable(WDTO_8S);                                       // Для тестов не рекомендуется устанавливать значение менее 8 сек.
 	
 	int setup_EEPROM = 42;                                     // Произвольное число. Программа записи начальных установок при первом включении устройства после монтажа.
@@ -631,25 +701,26 @@ void setup()
 		{
 			con.println(F("All SMS delete"));                    // 
 		}
-	//	ping();
+	ping();
  	MsTimer2::stop();
 	setColor(COLOR_GREEN);                                      // Включить зеленый светодиод
 	time = millis();                                            // Старт отсчета суток
-	
+	serial_print_date();
 	con.println(F("\nSIM800 setup end"));
 }
 
 void loop()
 {
 
-	if (digitalRead(STATUS) == LOW)
-	{
-		gprs.reboot(gprs.errors);                                     // Что то пошло не так программа перезапуска  если модуль не включился
-	}
+	//if (digitalRead(STATUS) == LOW)
+	//{
+	//	gprs.reboot(gprs.errors);                                     // Что то пошло не так программа перезапуска  если модуль не включился
+	//}
 
 	test_MCP23017();
+	
     check_SMS();                   // Проверить приход новых СМС
-
+	serial_print_date();
  unsigned long currentMillis = millis();
 	if(!time_set)                                                               // 
 	{
@@ -698,4 +769,5 @@ void loop()
 		gprs.reboot(gprs.errors);                         // вызываем reset интервалом в сутки
 	}
 	delay(500);
+	
 }
